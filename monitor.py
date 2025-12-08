@@ -1,5 +1,6 @@
 
 import requests
+import time
 from datetime import datetime
 
 
@@ -23,9 +24,21 @@ def check_website(url):
 
 
 if __name__ == "__main__":
-    # test with a fake url that returns 404
-    check_website("https://httpbin.org/status/404")
+    
+    # configuration
+    url = "https://www.google.com" # test with google because its always online
+    #url = "https://httpbin.org/status/404"  # test with a fake url that returns 404
+    interval = 2  # check every x seconds
 
-    # test with google because its always online
-    check_website("https://www.google.com") 
 
+    print(f"\n Starting monitor for {url} ...")
+    print("Press CTRL+C to stop.")
+
+    try:
+        # loop forever until user stops it
+        while True:
+            check_website(url)
+            time.sleep(interval)
+            
+    except KeyboardInterrupt:
+        print("\nMonitor stopped by user.")
