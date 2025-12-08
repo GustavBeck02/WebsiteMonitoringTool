@@ -13,6 +13,7 @@ def init_db():
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS checks (
                     timestamp TEXT,
+                    url TEXT,
                     status_code INTEGER,
                     response_time_ms REAL
                 )
@@ -23,18 +24,15 @@ def init_db():
 
 
 
-def save_to_db(now: datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-               status_code: int = None,
-               response_time: float = None  # in milliseconds
-               ):
+def save_to_db(now: str, url: str, status_code: int, response_time: float):
     """save the status result to the database"""
     try:
         with sqlite3.connect("monitoring.db") as conn:
             
             conn.execute('''
-                INSERT INTO checks (timestamp, status_code, response_time_ms)
-                VALUES (?, ?, ?)
-            ''', (now, status_code, response_time))
+                INSERT INTO checks (timestamp, url, status_code, response_time_ms)
+                VALUES (?, ?, ?, ?)
+            ''', (now, url, status_code, response_time))
             
     except Exception as e:
         print(f"Database error: {e}")
@@ -59,11 +57,11 @@ def check_website(url: str):
             print(f"[{now}] Website {url} returned an error. Status: {response.status_code}")
 
         # save result to database
-        save_to_db(now, response.status_code, response_time)
+        save_to_db(now, url, response.status_code, response_time)
 
     except Exception as e:
         print(f"[{now}] Connection failed. Error: {e}")
-        save_to_db(now, 0, 0.0)
+        save_to_db(now, url, 0, 0.0)
 
 
 
