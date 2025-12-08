@@ -2,23 +2,70 @@
 import requests
 import time
 from datetime import datetime
+import sqlite3
 
 
-def check_website(url):
-    """simple function to check the status of a website"""
+
+def init_db():
+    """initialize the SQLite database and create table if not exists"""
     try:
-        response = requests.get(url)
+        with sqlite3.connect("monitoring.db") as conn:
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS checks (
+                    timestamp TEXT,
+                    status_code INTEGER,
+                    response_time_ms REAL
+                )
+            ''')
+            
+    except Exception as e:
+        print(f"Error initializing DB: {e}")
 
-        # get current time for logging
-        now = datetime.now().strftime("%H:%M:%S")
+
+
+def save_to_db(now: datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+               status_code: int = None,
+               response_time: float = None  # in milliseconds
+               ):
+    """save the status result to the database"""
+    try:
+        with sqlite3.connect("monitoring.db") as conn:
+            
+            conn.execute('''
+                INSERT INTO checks (timestamp, status_code, response_time_ms)
+                VALUES (?, ?, ?)
+            ''', (now, status_code, response_time))
+            
+    except Exception as e:
+        print(f"Database error: {e}")
+
+
+
+
+def check_website(url: str):
+    """simple function to check the status of a website"""
+    
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S") # get current time for logging
+
+    try:
+        start_time = time.time()
+        response = requests.get(url)
+        end_time = time.time()
+        response_time = (end_time - start_time) * 1000  # convert to milliseconds
 
         if response.status_code == 200:
-            print(f"[{now}] Website {url} is online. Status: {response.status_code}")
+            print(f"[{now}] Website {url} is online. Time: {response_time:.0f}ms")
         else:
             print(f"[{now}] Website {url} returned an error. Status: {response.status_code}")
 
+        # save result to database
+        save_to_db(now, response.status_code, response_time)
+
     except Exception as e:
-        print(f"Connection failed. Error: {e}")
+        print(f"[{now}] Connection failed. Error: {e}")
+        save_to_db(now, 0, 0.0)
+
+
 
 
 
@@ -33,6 +80,9 @@ if __name__ == "__main__":
 
     print(f"\n Starting monitor for {url} ...")
     print("Press CTRL+C to stop.")
+
+    # initialize database
+    init_db()
 
     try:
         # loop forever until user stops it
