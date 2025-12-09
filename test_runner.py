@@ -1,6 +1,5 @@
 
 from monitor import check_website, init_db
-import time
 import sqlite3
 import os
 
