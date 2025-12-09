@@ -3,6 +3,8 @@ import requests
 import time
 from datetime import datetime
 import sqlite3
+import json
+import os
 
 
 
@@ -41,6 +43,24 @@ def save_to_db(now: str, url: str, status_code: int, response_time: float, db_pa
 
 
 
+def load_config(config_path: str = "config.json"):
+    """load configuration from JSON file"""
+    if not os.path.exists(config_path):
+        print("Config file not found. Creating default config.")
+        default_config = {
+            "url": "https://www.google.com",
+              "interval_seconds": 30
+              }
+        
+        with open(config_path, 'w') as f:
+            json.dump(default_config, f, indent=4)
+        return default_config
+    
+    with open(config_path, 'r') as f:
+        return json.load(f)
+
+
+
 
 def check_website(url: str, db_path: str = DB_PATH):
     """simple function to check the status of a website"""
@@ -49,7 +69,7 @@ def check_website(url: str, db_path: str = DB_PATH):
 
     try:
         start_time = time.time()
-        response = requests.get(url)
+        response = requests.get(url, timeout=5)
         end_time = time.time()
         response_time = (end_time - start_time) * 1000  # convert to milliseconds
 
@@ -72,13 +92,13 @@ def check_website(url: str, db_path: str = DB_PATH):
 
 if __name__ == "__main__":
     
-    # configuration
-    url = "https://www.google.com" # test with google because its always online
-    #url = "https://httpbin.org/status/404"  # test with a fake url that returns 404
-    interval = 2  # check every x seconds
-
+    
+    config = load_config()
+    url = config.get("url")
+    interval = config.get("interval_seconds", 10) # default 10 if not set
 
     print(f"\n Starting monitor for {url} ...")
+    print(f" Interval: {interval} seconds")
     print("Press CTRL+C to stop.")
 
     # initialize database
