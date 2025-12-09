@@ -6,10 +6,12 @@ import sqlite3
 
 
 
-def init_db():
+DB_PATH = "monitoring.db"
+
+def init_db(db_path: str = DB_PATH):
     """initialize the SQLite database and create table if not exists"""
     try:
-        with sqlite3.connect("monitoring.db") as conn:
+        with sqlite3.connect(db_path) as conn:
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS checks (
                     timestamp TEXT,
@@ -24,10 +26,10 @@ def init_db():
 
 
 
-def save_to_db(now: str, url: str, status_code: int, response_time: float):
+def save_to_db(now: str, url: str, status_code: int, response_time: float, db_path: str = DB_PATH):
     """save the status result to the database"""
     try:
-        with sqlite3.connect("monitoring.db") as conn:
+        with sqlite3.connect(db_path) as conn:
             
             conn.execute('''
                 INSERT INTO checks (timestamp, url, status_code, response_time_ms)
@@ -40,7 +42,7 @@ def save_to_db(now: str, url: str, status_code: int, response_time: float):
 
 
 
-def check_website(url: str):
+def check_website(url: str, db_path: str = DB_PATH):
     """simple function to check the status of a website"""
     
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S") # get current time for logging
@@ -57,11 +59,11 @@ def check_website(url: str):
             print(f"[{now}] Website {url} returned an error. Status: {response.status_code}")
 
         # save result to database
-        save_to_db(now, url, response.status_code, response_time)
+        save_to_db(now, url, response.status_code, response_time, db_path=db_path)
 
     except Exception as e:
         print(f"[{now}] Connection failed. Error: {e}")
-        save_to_db(now, url, 0, 0.0)
+        save_to_db(now, url, 0, 0.0, db_path=db_path)
 
 
 
@@ -80,7 +82,7 @@ if __name__ == "__main__":
     print("Press CTRL+C to stop.")
 
     # initialize database
-    init_db()
+    init_db(DB_PATH)
 
     try:
         # loop forever until user stops it
